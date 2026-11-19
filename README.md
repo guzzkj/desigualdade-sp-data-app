@@ -1,6 +1,8 @@
 # Projeto Tema 2 — Parte 2: Data app
 **"Onde mora a desigualdade em São Paulo?"** · Data app em Streamlit com os indicadores da Parte 1 e uma primeira versão da modelagem preditiva (que a Parte 3 vai aprofundar).
 
+**App online:** https://desigualdade-sp-tsi.streamlit.app/
+
 Dados: *Mapa da Desigualdade 2025* (Rede Nossa São Paulo / Instituto Cidades Sustentáveis), 96 distritos da capital, indicadores de 2024.
 
 ## Como rodar localmente
