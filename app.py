@@ -1,4 +1,4 @@
-"""Data app — Onde mora a desigualdade em São Paulo? (Projeto ICD, Parte 2)
+"""Data app: Onde mora a desigualdade em São Paulo? (Projeto ICD, Parte 2)
 
 Rodar:  streamlit run app.py
 """
@@ -39,7 +39,7 @@ st.markdown('''<style>
 def fmt(valor, casas=2):
     """Número no formato brasileiro: 1234.5 -> '1.234,50'."""
     if valor is None or pd.isna(valor):
-        return '—'
+        return 'n/d'
     texto = f'{valor:,.{casas}f}'
     return texto.replace(',', 'X').replace('.', ',').replace('X', '.')
 
@@ -276,7 +276,7 @@ with aba_explorar:
 
     st.subheader('Desigualtômetro do recorte')
     st.caption('Quantas vezes o maior valor é o menor entre os distritos do recorte '
-               '("—" quando o menor valor é zero e a divisão não é possível).')
+               '("n/d" quando o menor valor é zero e a divisão não é possível).')
     tabela_desig = desigualtometro(recorte, [c for c in INDICADORES if c not in ('abandono_escolar', 'espera_creche')])
     st.dataframe(tabela_desig, hide_index=True, width='stretch',
                  column_config={'Maior valor': st.column_config.NumberColumn(format='%.2f'),
@@ -290,11 +290,11 @@ with aba_modelo:
         'Se sim, o modelo mostra *quais fatores mais pesam* e, pelo erro de cada distrito, '
         '*onde se vive menos do que seria esperado*.')
     st.caption('Regressão supervisionada · 96 distritos · validação cruzada com 5 partes: '
-               'cada distrito é previsto por um modelo treinado sem ele. Versão inicial; a Parte 3 do projeto aprofunda.')
+               'cada distrito é previsto por um modelo treinado sem ele. Modelo final da Parte 3: Ridge (veja o resumo no fim desta aba).')
 
     cm, cv = st.columns([1, 2])
     nome_modelo = cm.selectbox('Modelo', modelo.NOMES_MODELOS,
-                               help='Os quatro modelos vistos na Aula 14. Compare as métricas.')
+                               help='Ridge e Gradient Boosting ajustado vêm da Parte 3; os outros quatro são os da Aula 14. Compare as métricas.')
     variaveis = cv.multiselect('Variáveis usadas pelo modelo', modelo.VARIAVEIS, default=modelo.VARIAVEIS,
                                format_func=nome_variavel,
                                help='Tire uma variável para ver quanto o modelo perde sem ela.')
@@ -362,6 +362,84 @@ with aba_modelo:
         st.caption('Esses distritos têm indicadores parecidos com outros, mas vivem menos. Vale investigar '
                    'fatores que o Mapa não mede (acesso a hospitais, saneamento, idade da população). '
                    'O número de linhas segue o slider da barra lateral.')
+
+    # ------------------------------------------------ resultados da Parte 3 (notebook)
+    st.divider()
+    st.subheader('Resultados da Parte 3: modelo final e segmentação')
+    PASTA_P3 = 'data/parte3'
+    try:
+        comp_p3 = pd.read_csv(f'{PASTA_P3}/parte3_comparacao_modelos.csv')
+        abl_p3 = pd.read_csv(f'{PASTA_P3}/parte3_ablacao.csv')
+        grupos_p3 = pd.read_csv(f'{PASTA_P3}/parte3_grupos_kmeans.csv')
+    except FileNotFoundError:
+        st.info('Rode o notebook da Parte 3 e copie a pasta saida/ para data/parte3/ para ver este resumo.')
+    else:
+        st.markdown(
+            'No notebook da Parte 3 os modelos foram avaliados com **validação cruzada repetida** '
+            '(5 partes × 10 repetições = 50 testes) e o ajuste de hiperparâmetros foi feito com '
+            '**validação cruzada aninhada** (sem olhar o teste). **Conclusão:** os modelos lineares vencem; '
+            'o **Ridge** é o modelo final (R² ≈ 0,83, erro médio ≈ 1,6 ano contra 4,6 anos de chutar a média).')
+        k1, k2, k3 = st.columns(3)
+        final = comp_p3[comp_p3['modelo'] == 'Ridge (α=1)'].iloc[0]
+        base = comp_p3[comp_p3['modelo'] == 'Média (baseline)'].iloc[0]
+        k1.metric('R² do modelo final (Ridge)', fmt(final['R²']), help='Média de 50 partições de teste.')
+        k2.metric('Erro médio (MAE)', f'{fmt(final["MAE (anos)"], 1)} anos',
+                  delta=f'{fmt(final["MAE (anos)"] - base["MAE (anos)"], 1)} anos vs. chutar a média',
+                  delta_color='inverse')
+        k3.metric('Só com gravidez na adolescência',
+                  f'R² {fmt(abl_p3.set_index("conjunto").loc["Só gravidez na adolescência", "R²"])}',
+                  help='Teste de ablação: uma única variável já explica quase tudo.')
+
+        p1, p2 = st.columns(2)
+        with p1:
+            st.markdown('**Comparação dos modelos (R² médio, maior é melhor)**')
+            comp_graf = comp_p3[comp_p3['modelo'] != 'Média (baseline)'].sort_values('R²')
+            fig_comp = px.bar(comp_graf, x='R²', y='modelo', orientation='h', color='protocolo', height=420,
+                              error_x='R² (dp)', labels={'modelo': '', 'protocolo': ''},
+                              color_discrete_sequence=['#3969ac', '#e68310'])
+            fig_comp.update_layout(margin={'t': 10, 'l': 0, 'r': 10}, xaxis_range=[0, 1],
+                                   legend={'orientation': 'h', 'yanchor': 'top', 'y': -0.2})
+            st.plotly_chart(fig_comp, width='stretch')
+            st.caption('Barras de erro: desvio-padrão entre as partições. Com poucos distritos, modelos '
+                       'flexíveis (árvores, KNN) não superam a regressão linear nem depois do ajuste.')
+        with p2:
+            st.markdown('**Teste de ablação (Ridge com diferentes conjuntos de variáveis)**')
+            st.dataframe(abl_p3, hide_index=True, width='stretch',
+                         column_config={'conjunto': 'Variáveis usadas',
+                                        'R²': st.column_config.NumberColumn(format='%.2f'),
+                                        'MAE (anos)': st.column_config.NumberColumn(format='%.2f'),
+                                        'RMSE (anos)': st.column_config.NumberColumn(format='%.2f')})
+            st.caption('Gravidez na adolescência é um marcador de vulnerabilidade social, não uma causa direta.')
+
+        st.markdown('**Segmentação dos distritos (K-means, k = 3)**')
+        grupos_rec = grupos_p3[grupos_p3['regiao'].isin(regioes_escolhidas)]
+        s1, s2 = st.columns(2)
+        with s1:
+            fig_grp = px.scatter(grupos_rec, x='gravidez_adolesc', y='idade_morte', color='grupo',
+                                 hover_name='distrito', height=420,
+                                 category_orders={'grupo': sorted(grupos_p3['grupo'].unique())},
+                                 color_discrete_sequence=['#d6604d', '#f2b701', '#4393c3'],
+                                 labels={'gravidez_adolesc': 'Gravidez na adolescência (%)',
+                                         'idade_morte': 'Idade média ao morrer (anos)', 'grupo': ''})
+            fig_grp.update_traces(marker={'size': 9})
+            fig_grp.update_layout(margin={'t': 10, 'l': 0, 'r': 10},
+                                  legend={'orientation': 'h', 'yanchor': 'top', 'y': -0.2})
+            st.plotly_chart(fig_grp, width='stretch')
+        with s2:
+            resumo_grp = grupos_rec.groupby('grupo').agg(
+                distritos=('distrito', 'count'), idade=('idade_morte', 'mean'),
+                gravidez=('gravidez_adolesc', 'mean'), homicidios=('homicidios', 'mean'),
+                remuneracao=('remuneracao', 'mean')).reset_index()
+            st.dataframe(resumo_grp, hide_index=True, width='stretch',
+                         column_config={'grupo': 'Grupo', 'distritos': 'Distritos',
+                                        'idade': st.column_config.NumberColumn('Idade ao morrer', format='%.1f anos'),
+                                        'gravidez': st.column_config.NumberColumn('Gravidez adolesc.', format='%.1f%%'),
+                                        'homicidios': st.column_config.NumberColumn('Homicídios', format='%.1f'),
+                                        'remuneracao': st.column_config.NumberColumn('Remuneração', format='R$ %.0f')})
+            st.caption('Grupos formados só pelos indicadores (sem informar a região), com cada indicador '
+                       'convertido em posição percentual para que outliers como Sé e República não dominem. '
+                       'Silhueta baixa (0,16): os distritos formam mais um gradiente do que ilhas separadas.')
+
 
 # ---------------------------------------------------------------- aba 4: dados e método
 with aba_dados:

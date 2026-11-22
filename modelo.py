@@ -1,10 +1,12 @@
-"""Modelagem preditiva (versão inicial, será aprofundada na Parte 3).
+"""Modelagem preditiva (atualizada com os resultados da Parte 3).
 
 Pergunta: dá para estimar a IDADE MÉDIA AO MORRER de um distrito a partir dos
 outros indicadores sociais, culturais e ambientais?
 
 - Tarefa: regressão (alvo numérico contínuo, em anos).
-- Modelos (vistos na Aula 14): Regressão Linear, KNN, Árvore de Decisão e Random Forest.
+- Modelos (Aula 14): Regressão Linear, KNN, Árvore de Decisão e Random Forest.
+- Parte 3: Ridge (modelo final, alpha=1 escolhido por validação cruzada aninhada) e
+  Gradient Boosting com os hiperparâmetros ajustados (detalhes no notebook da Parte 3).
 - Avaliação: validação cruzada com 5 partes (KFold). Com só 96 distritos, um único
   train_test_split deixaria ~20 distritos no teste e o resultado mudaria muito
   conforme o sorteio. Na validação cruzada cada distrito é previsto uma vez por um
@@ -13,8 +15,8 @@ outros indicadores sociais, culturais e ambientais?
   menos do que os indicadores sugerem, ou seja, onde há algo além do que medimos.
 """
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import mean_absolute_error, r2_score, root_mean_squared_error
 from sklearn.model_selection import KFold, cross_val_predict
 from sklearn.neighbors import KNeighborsRegressor
@@ -35,15 +37,19 @@ SEMENTE = 42
 def criar_modelo(nome):
     # KNN e regressão linear dependem da escala das variáveis, então padronizamos antes
     modelos = {
+        'Ridge (modelo final · Parte 3)': make_pipeline(StandardScaler(), Ridge(alpha=1.0)),
         'Regressão Linear': make_pipeline(StandardScaler(), LinearRegression()),
         'KNN (5 vizinhos)': make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=5)),
         'Árvore de Decisão': DecisionTreeRegressor(max_depth=3, random_state=SEMENTE),
         'Random Forest': RandomForestRegressor(n_estimators=300, random_state=SEMENTE),
+        'Gradient Boosting (ajustado · Parte 3)': GradientBoostingRegressor(
+            learning_rate=0.1, max_depth=1, n_estimators=300, random_state=SEMENTE),
     }
     return modelos[nome]
 
 
-NOMES_MODELOS = ['Regressão Linear', 'KNN (5 vizinhos)', 'Árvore de Decisão', 'Random Forest']
+NOMES_MODELOS = ['Ridge (modelo final · Parte 3)', 'Regressão Linear', 'KNN (5 vizinhos)', 'Árvore de Decisão',
+                 'Random Forest', 'Gradient Boosting (ajustado · Parte 3)']
 
 
 def avaliar(dados, nome_modelo, variaveis):

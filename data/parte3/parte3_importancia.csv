@@ -1,0 +1,10 @@
+variavel,nome,coeficiente_anos_por_dp,aumento_do_erro_ao_embaralhar_anos
+gravidez_adolesc,Gravidez na adolescência,-3.865289497164393,2.954644436782609
+homicidios,Homicídios,-1.248746580878906,0.556506293290631
+mort_infantil,Mortalidade infantil,-0.6412749024756125,0.15557727900311452
+emissao_poluentes,Emissão de poluentes,-0.5847504299989124,0.11125846585852164
+vel_onibus,Velocidade dos ônibus,-0.3445378775816863,0.018571803693174647
+risco_habitacional,Auxílio-aluguel por risco,0.09463377044445223,-0.0011326841012910109
+violencia_racial,Violência racial,-0.07981671284303882,-0.005940455729291883
+remuneracao,Remuneração formal,0.1350200120612638,-0.008684209974682945
+equip_cultura,Equip. de cultura,0.03662488142217248,-0.00905439630112315
