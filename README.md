@@ -2,13 +2,32 @@
 **"Onde mora a desigualdade em São Paulo?"** · Data app em Streamlit com os indicadores da Parte 1 e os resultados da modelagem preditiva da Parte 3 (modelo final Ridge + segmentação K-means).
 
 **App online:** https://desigualdade-sp-tsi.streamlit.app/
+**Código:** https://github.com/guzzkj/desigualdade-sp-data-app
 
 Dados: *Mapa da Desigualdade 2025* (Rede Nossa São Paulo / Instituto Cidades Sustentáveis), 96 distritos da capital, indicadores de 2024.
 
+## Requisitos da Parte 2 (checklist)
+| Requisito do enunciado | Onde está no app | Status |
+|---|---|---|
+| Carregamento da fonte dos dados | Planilha original lida e pré-processada ao abrir; `st.file_uploader` na barra lateral troca a fonte | ✅ |
+| Textos explicativos | Frase-chave no cabeçalho, leitura automática do recorte, legenda de cada gráfico, aba Método | ✅ |
+| Mínimo de 3 KPIs com `st.metric` | **13** `st.metric` (4 índices no cabeçalho, 3 do indicador, 3 do modelo, 3 da Parte 3) | ✅ |
+| Mínimo de 2 filtros (`selectbox`/`multiselect`/`slider`) | Barra lateral: Regiões (`multiselect`), Indicador (`selectbox`), Distritos no ranking (`slider`); mais Eixo X/Y, Modelo e Variáveis | ✅ |
+| Mínimo de 3 gráficos interativos de 2 tipos | **8** gráficos Plotly de **4** tipos (mapa coroplético, barras, dispersão, boxplot) | ✅ |
+| Widgets de texto e organização da tela | `st.tabs` (4 abas), `st.columns`, `st.sidebar`, `st.expander`, `st.markdown`/`st.caption`/`st.info` | ✅ |
+| Resultados da modelagem preditiva | Aba **Previsão**: 6 modelos com validação cruzada + resultados da Parte 3 (Ridge final, ablação, K-means) | ✅ |
+| Código Python completo | `app.py`, `processamento.py`, `modelo.py`, `preparar_mapa.py` | ✅ |
+| Instruções de execução local | Seção abaixo | ✅ |
+| Justificativa dos componentes | Seção "Justificativa dos componentes Streamlit" | ✅ |
+| Como cada filtro influencia KPIs e gráficos | Seção "Como cada filtro muda o app" | ✅ |
+| Deploy (recomendado) | Streamlit Community Cloud: https://desigualdade-sp-tsi.streamlit.app/ | ✅ |
+
 ## Como rodar localmente
-Precisa de Python 3.12 (as versões fixadas no `requirements.txt` não instalam em Pythons antigos). No terminal (Anaconda Prompt ou outro), dentro desta pasta:
+Precisa de Python 3.12 (as versões fixadas no `requirements.txt` não instalam em Pythons antigos). No terminal (Anaconda Prompt ou outro):
 
 ```bash
+git clone https://github.com/guzzkj/desigualdade-sp-data-app.git
+cd desigualdade-sp-data-app
 python -m venv .venv
 .venv\Scripts\activate          # Windows  (Linux/Mac: source .venv/bin/activate)
 pip install -r requirements.txt
@@ -89,17 +108,8 @@ Todos os gráficos são do Plotly: passar o mouse mostra o distrito e o valor, d
 - O modelo mostra associação, não causa.
 
 ## Deploy no Streamlit Community Cloud
-1. Criar um repositório no GitHub e subir **o conteúdo desta pasta** (o `app.py` precisa ficar na raiz do repositório):
-   ```bash
-   git init
-   git add .
-   git commit -m "feat: add inequality data app"
-   git branch -M main
-   git remote add origin https://github.com/<usuario>/<repositorio>.git
-   git push -u origin main
-   ```
-2. Entrar em [share.streamlit.io](https://share.streamlit.io) com a conta do GitHub › **Create app** › **Deploy a public app from GitHub**.
-3. Escolher o repositório, a branch `main` e o *Main file path* `app.py`.
-4. Em **Advanced settings**, escolher **Python 3.12** (versão testada) e clicar em **Deploy**.
+O app está publicado em https://desigualdade-sp-tsi.streamlit.app/ a partir da branch `main` deste repositório (*Main file path* `app.py`, Python 3.12). Cada `git push` na `main` atualiza o app online.
+
+Para publicar uma cópia: fazer fork do repositório, entrar em [share.streamlit.io](https://share.streamlit.io) com a conta do GitHub › **Create app** › escolher o repositório, a branch `main` e o arquivo `app.py` › em **Advanced settings**, Python 3.12 › **Deploy**.
 
 O `requirements.txt` fixa as versões testadas. Os dados ficam em `data/` e são lidos por caminho relativo, então não há nada a configurar. O app não usa segredos nem chaves de API.
